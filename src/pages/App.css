@@ -36,3 +36,12 @@
     transform: rotate(360deg);
   }
 }
+
+.dashboard-container {
+  padding: 32px;
+  background: #f8fafc;
+}
+
+h1 {
+  color: #2c2323;
+}
