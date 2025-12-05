@@ -8,6 +8,7 @@ function Dashboard() {
   return (
     <div>
       <h1>Budget Dashboard</h1>
+      <h3>This is where you upload your CSV file!</h3>
       <FileUpload onData={setTransactions} />
       {Array.isArray(transactions) && transactions.length > 0 && (
         <div>
