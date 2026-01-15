@@ -71,6 +71,7 @@ function Dashboard() {
                 <th>Currency</th>
                 <th>State</th>
                 <th>Balance</th>
+                <th>Category</th>
               </tr>
             </thead>
             <tbody>
@@ -90,6 +91,7 @@ function Dashboard() {
                   <td>{tx.currency}</td>
                   <td>{tx.state}</td>
                   <td>{tx.balance}</td>
+                  <td>{tx.category ? tx.category.name : 'Other'}</td>
                 </tr>
               ))}
             </tbody>
