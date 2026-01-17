@@ -230,7 +230,7 @@ const [selectedCatId, setSelectedCatId] = useState("");
       </select>
 
       <div className="modal-btns">
-        <button className="btn add-btn" onClick={saveRule}>Create Rule</button>
+        <button className="btn" onClick={saveRule}>Create Rule</button>
         <button className="btn cancel-btn" onClick={() => setIsRuleModalOpen(false)}>Cancel</button>
       </div>
     </div>

@@ -144,7 +144,7 @@ tr:hover .actions-cell {
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 50%; /* Circular add button */
+  border-radius: 20%; /* Circular add button */
   font-size: 1.2rem;
 }
 

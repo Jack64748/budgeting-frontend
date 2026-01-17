@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'; // Added useEffect
-import FileUpload from '../components/FileUpload';
+import { useNavigate } from 'react-router-dom';
 import TransactionManager from '../components/TransactionManager'; 
 import './App.css';
 
@@ -8,6 +8,8 @@ import './App.css';
 // useState([]): Initializes the list as an empty array
 function Dashboard() {
   const [transactions, setTransactions] = useState([]); 
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
 
 
@@ -22,7 +24,9 @@ function Dashboard() {
       // Put the DB data into memory and redraws the table
       setTransactions(data); 
     } catch (error) {
-      console.error("Error fetching transactions:", error);
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
     }
   };
   // tells React to run this fetch exactly 
@@ -40,20 +44,36 @@ function Dashboard() {
 
 
 
+  if (loading) return <div>Loading...</div>;
+
+  // IF NO DATA: Show the "Get Started" screen
+  if (transactions.length === 0) {
+    return (
+      <div className="empty-state">
+        <h2>No Transactions Found</h2>
+        <p>It looks like you haven't uploaded any bank statements yet.</p>
+        <button className="btn" onClick={() => navigate('/upload')}>
+          Go to Upload Page
+        </button>
+      </div>
+    );
+  }
+
   // What the user actually sees
   return (
     <div>
       <h1>Budget Dashboard</h1>
-      <h3>Upload your CSV file or manage existing data</h3>
+      <h3>Manage existing data</h3>
 
       <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
         
-        {/* Passes the "memory update" function to the upload button so it can 
-        refresh the table after a successful upload.*/}
-        <FileUpload onData={setTransactions} />
-
+        
         {/* Connects the delete button to the clearing logic */}
         <TransactionManager onDataCleared={handleClear} />
+
+        <button className="btn" onClick={() => navigate('/upload')}>
+          Upload new data
+        </button>
       </div>
       {/*Ternary Operator. It checks if you have data. If yes, 
       show the table; if no, show a message.*/}

@@ -1,0 +1,33 @@
+.file-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+  border: 2px dashed #cbd5e0;
+  border-radius: 12px;
+  background-color: #f8fafc;
+  transition: 0.3s;
+}
+
+.file-upload-zone:hover {
+  border-color: #61dafb;
+  background-color: #f1f5f9;
+}
+
+.upload-label {
+  background-color: #2ecc71;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.error-message {
+  color: #e74c3c;
+  background: #fdeaea;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 15px;
+  font-size: 0.9rem;
+}
