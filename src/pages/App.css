@@ -45,3 +45,60 @@
 h1 {
   color: #2c2323;
 }
+
+
+
+.gauge-section {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    max-width: 600px;
+    margin: 0 auto 30px auto;
+}
+
+
+.category-accordion {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.category-summary {
+  list-style: none; /* Hides the default browser arrow */
+  padding: 15px 20px;
+  cursor: pointer;
+  background: #f8fafc;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.category-summary:hover {
+  background: #f1f5f9;
+}
+
+.summary-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Rotate the arrow when <details> is open */
+details[open] .arrow {
+  transform: rotate(90deg);
+  display: inline-block;
+}
+
+.expanded-table-wrapper {
+  padding: 10px 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.cat-total {
+  font-size: 1.1rem;
+}
+
+.cat-total.negative { color: #e74c3c; }
+.cat-total.positive { color: #27ae60; }

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react'; // Added useEffect
 import { useNavigate } from 'react-router-dom';
 import TransactionManager from '../components/TransactionManager'; 
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import './App.css';
 
+const COLORS = ['#fea500', '#00C49F'];
 
 // Main function for the app the variable transactions, the function setTransactions
 // useState([]): Initializes the list as an empty array
@@ -44,6 +46,36 @@ function Dashboard() {
 
 
 
+  // This creates an object where the keys are Category Names 
+// and the values are arrays of transactions
+const groupedTransactions = transactions.reduce((groups, tx) => {
+  const categoryName = tx.category?.name || 'Other';
+  if (!groups[categoryName]) {
+    groups[categoryName] = [];
+  }
+  groups[categoryName].push(tx);
+  return groups;
+}, {});
+
+
+
+  // --- CALCULATION LOGIC FOR THE GAUGE ---
+  const budgetGoal = 2000; // You can change this to your monthly limit
+  
+  // Calculate total spent specifically for "Fun Money" (or all spending)
+  // Math.abs turns negative numbers into positive for the chart
+  const totalSpent = transactions
+    .filter(tx => tx.category?.name === "Beer") 
+    .reduce((sum, tx) => sum + Math.abs(tx.amount || 0), 0);
+
+  const remaining = Math.max(0, budgetGoal - totalSpent);
+
+  const chartData = [
+    { name: 'Spent', value: totalSpent },
+    { name: 'Remaining', value: remaining },
+  ];
+
+
   if (loading) return <div>Loading...</div>;
 
   // IF NO DATA: Show the "Get Started" screen
@@ -63,6 +95,35 @@ function Dashboard() {
   return (
     <div>
       <h1>Budget Dashboard</h1>
+
+      {/* SECTION 1: THE GAUGE CHART */}
+      <div className="gauge-section" style={{ textAlign: 'center', marginBottom: '30px' }}>
+        <h3>Fun Money Progress</h3>
+        <ResponsiveContainer width="100%" height={200}>
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="100%"
+              startAngle={180}
+              endAngle={0}
+              innerRadius={70}
+              outerRadius={90}
+              paddingAngle={2}
+              dataKey="value"
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+        <div style={{ marginTop: '-40px' }}>
+          <span style={{ fontSize: '24px', fontWeight: 'bold' }}>£{totalSpent.toFixed(2)}</span>
+          <p style={{ color: 'gray' }}>Spent of £{budgetGoal} limit</p>
+        </div>
+      </div>
+
       <h3>Manage existing data</h3>
 
       <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
@@ -75,53 +136,62 @@ function Dashboard() {
           Upload new data
         </button>
       </div>
-      {/*Ternary Operator. It checks if you have data. If yes, 
-      show the table; if no, show a message.*/}
-      {Array.isArray(transactions) && transactions.length > 0 ? (
-        <div>
-          <h2>Transactions</h2>
-          <table border="1" cellPadding="3" style={{ borderCollapse: 'collapse', width: '100%' }}>
+
+
+      {/* Replace your existing table with this mapped grouped data */}
+<div className="grouped-transactions-container">
+  <h2>Spending by Category</h2>
+  
+  {Object.keys(groupedTransactions).map((catName) => {
+    const categoryItems = groupedTransactions[catName];
+    const total = categoryItems.reduce((sum, item) => sum + item.amount, 0);
+
+    return (
+      <details key={catName} className="category-accordion">
+        <summary className="category-summary">
+          <div className="summary-content">
+            <span className="cat-name">
+               {/* Small arrow emoji that rotates automatically with <details> */}
+               <span className="arrow">▶</span> {catName}
+            </span>
+            <span className="cat-count">({categoryItems.length} items)</span>
+            <span className={`cat-total ${total < 0 ? 'negative' : 'positive'}`}>
+              £{Math.abs(total).toFixed(2)}
+            </span>
+          </div>
+        </summary>
+
+        <div className="expanded-table-wrapper">
+          <table className="data-table">
             <thead>
               <tr>
-                <th>Type</th>
-                <th>Product</th>
-                <th>Started Date</th>
+                <th>Date</th>
                 <th>Description</th>
                 <th>Amount</th>
-                <th>Currency</th>
                 <th>State</th>
-                <th>Balance</th>
-                <th>Category</th>
               </tr>
             </thead>
             <tbody>
-              {/* This loops through every transaction in 
-               memory and creates a new row (<tr>) for each one. */}
-              {transactions.map((tx, i) => (
-                <tr key={tx.id || i}>
-                  <td>{tx.type}</td>
-                  <td>{tx.product}</td>
-                  {/* turns a messy computer timestamp into a readable date (e.g., 11/01/2026) */}
+              {categoryItems.map((tx) => (
+                <tr key={tx.id}>
                   <td>{tx.startedDate ? new Date(tx.startedDate).toLocaleDateString() : 'N/A'}</td>
                   <td>{tx.description}</td>
-                  {/* checks if the money is going out (negative) or coming in (positive) and colors the text red or green accordingly */}
-                  <td style={{ color: tx.amount < 0 ? 'red' : 'green' }}>
-                    {tx.amount}
+                  <td style={{ color: tx.amount < 0 ? '#e74c3c' : '#27ae60' }}>
+                    {tx.amount.toFixed(2)}
                   </td>
-                  <td>{tx.currency}</td>
                   <td>{tx.state}</td>
-                  <td>{tx.balance}</td>
-                  <td>{tx.category ? tx.category.name : 'Other'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      ) : (
-        <div style={{ marginTop: '20px', color: 'gray' }}>
-          No transactions found. Try uploading a CSV!
-        </div>
-      )}
+      </details>
+    );
+  })}
+</div>
+     
+        
+      
     </div>
   );
 }
