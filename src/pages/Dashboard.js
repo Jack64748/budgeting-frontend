@@ -6,11 +6,16 @@ import './App.css';
 
 const COLORS = ['#fea500', '#00C49F'];
 
+
+
 // Main function for the app the variable transactions, the function setTransactions
 // useState([]): Initializes the list as an empty array
 function Dashboard() {
   const [transactions, setTransactions] = useState([]); 
   const [loading, setLoading] = useState(true);
+
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
+
   const navigate = useNavigate();
 
 
@@ -143,7 +148,22 @@ const groupedTransactions = transactions.reduce((groups, tx) => {
   <h2>Spending by Category</h2>
   
   {Object.keys(groupedTransactions).map((catName) => {
-    const categoryItems = groupedTransactions[catName];
+    let categoryItems = groupedTransactions[catName];
+
+    // Check if this is the "Other" category and sort it
+    if (catName === "Other") {
+        categoryItems = [...categoryItems].sort((a, b) => {
+            const descA = a.description?.toUpperCase() || "";
+            const descB = b.description?.toUpperCase() || "";
+            
+            if (sortOrder === 'asc') {
+                return descA.localeCompare(descB);
+            } else {
+                return descB.localeCompare(descA);
+            }
+        });
+    }
+
     const total = categoryItems.reduce((sum, item) => sum + item.amount, 0);
 
     return (
@@ -166,7 +186,14 @@ const groupedTransactions = transactions.reduce((groups, tx) => {
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Description</th>
+                {/* Clickable Header for Sorting */}
+      <th 
+        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+        style={{ cursor: 'pointer', userSelect: 'none' }}
+        className="sortable-header"
+      >
+        Description {catName === "Other" && (sortOrder === 'asc' ? '▲' : '▼')}
+      </th>
                 <th>Amount</th>
                 <th>State</th>
               </tr>

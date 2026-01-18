@@ -102,3 +102,23 @@ details[open] .arrow {
 
 .cat-total.negative { color: #e74c3c; }
 .cat-total.positive { color: #27ae60; }
+
+
+
+.sortable-header {
+  position: relative;
+  transition: background-color 0.2s;
+  padding-right: 20px; /* Make room for the arrow */
+}
+
+.sortable-header:hover {
+  background-color: #edf2f7; /* Light gray on hover */
+  color: #2d3748;
+}
+
+/* Optional: style the arrow specifically */
+.sortable-header::after {
+  font-size: 0.7rem;
+  margin-left: 5px;
+  vertical-align: middle;
+}
