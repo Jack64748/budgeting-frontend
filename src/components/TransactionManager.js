@@ -29,7 +29,7 @@ const TransactionManager = ({ onDataCleared }) => {
 };
 
     return (
-        <div style={{ marginTop: '20px' }}>
+        <div style={{ display: 'inline-block' }}>
             {/* Connects the button click to the asynchronous function.*/} 
             <button 
                 onClick={handleClearData} 

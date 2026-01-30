@@ -48,6 +48,24 @@ function Dashboard() {
     fetchTransactions();
   }, []);
 
+
+
+// Locate the latest Savings balance from your transactions list
+const getSavingsBalance = () => {
+  const savingsData = transactions
+    .filter(tx => tx.product === "Savings")
+    // Sort to ensure the newest date is at index 0
+    .sort((a, b) => new Date(b.startedDate) - new Date(a.startedDate));
+
+  // Return the balance of the most recent transaction
+  return savingsData.length > 0 ? savingsData[0].balance : 0;
+};
+
+const currentSavings = getSavingsBalance();
+
+
+
+
 const handleMoveAll = async (description, newCatId) => {
     // If the user selects the "Move all..." placeholder, do nothing
     if (!newCatId) return;
@@ -149,6 +167,26 @@ const groupedTransactions = transactions.reduce((groups, tx) => {
   return (
     <div>
       <h1>Budget Dashboard</h1>
+      <div className="savings-card" style={{ 
+  background: '#f0f9ff', 
+  padding: '10px', 
+  borderRadius: '10px', 
+  border: '4px solid #bae6fd',
+  marginBottom: '20px' 
+}}>
+  <h3 style={{ margin: 0, color: '#0369a1' }}>🏦 Total Savings Balance</h3>
+  <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: '10px 0' }}>
+    £{currentSavings.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+  </p>
+  <small style={{ color: '#0c4a6e' }}>
+    Latest sync: {transactions.find(tx => tx.product === "Savings")?.startedDate 
+      ? new Date(transactions.find(tx => tx.product === "Savings").startedDate).toLocaleDateString() 
+      : 'No data'}
+  </small>
+</div>
+
+
+
 
       {/* SECTION 1: THE GAUGE CHART */}
       <div className="gauge-section" style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -186,7 +224,7 @@ const groupedTransactions = transactions.reduce((groups, tx) => {
         {/* Connects the delete button to the clearing logic */}
         <TransactionManager onDataCleared={handleClear} />
 
-        <button className="btn" onClick={() => navigate('/upload')} style={{ backgroundColor: '#acff4d', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+        <button className="btn" onClick={() => navigate('/upload')} style={{ backgroundColor: '#2aa03d', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
           Upload new data
         </button>
       </div>
