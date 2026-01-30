@@ -18,6 +18,8 @@ function Dashboard() {
 
   const navigate = useNavigate();
 
+  const [categories, setCategories] = useState([]);
+
 
 
 
@@ -30,6 +32,10 @@ function Dashboard() {
       const data = await response.json();
       // Put the DB data into memory and redraws the table
       setTransactions(data); 
+
+      const rescat = await fetch('http://localhost:5170/api/Categories');
+      const datacat = await rescat.json();
+      setCategories(datacat);
     } catch (error) {
       console.error("Error:", error);
     } finally {
@@ -41,6 +47,49 @@ function Dashboard() {
   useEffect(() => {
     fetchTransactions();
   }, []);
+
+const handleMoveAll = async (description, newCatId) => {
+    // If the user selects the "Move all..." placeholder, do nothing
+    if (!newCatId) return;
+
+    try {
+      const response = await fetch('http://localhost:5170/api/Budget/reassign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            description: description, 
+            newCategoryId: parseInt(newCatId) 
+        })
+      });
+
+      if (response.ok) {
+        // This is the magic part: it re-fetches everything from the DB
+        // so all transactions with that name "jump" to their new home
+        fetchTransactions(); 
+      }
+    } catch (err) {
+      console.error("Failed to reassign:", err);
+    }
+  };
+
+
+  const createAndMove = async (description) => {
+    const newName = prompt("Enter new category name:");
+    if (!newName) return;
+
+    // 1. Create Category
+    const catRes = await fetch('http://localhost:5170/api/Categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName })
+    });
+    const newCategory = await catRes.json();
+
+    // 2. Reassign all transactions with this name to the new ID
+    await handleMoveAll(description, newCategory.id);
+};
+
+
   
   // This is a "callback" function. When the delete button in the 
   // child component is clicked, this function wipes the local screen 
@@ -70,7 +119,7 @@ const groupedTransactions = transactions.reduce((groups, tx) => {
   // Calculate total spent specifically for "Fun Money" (or all spending)
   // Math.abs turns negative numbers into positive for the chart
   const totalSpent = transactions
-    .filter(tx => tx.category?.name === "Beer") 
+    .filter(tx => tx.category?.name === "Fitness") 
     .reduce((sum, tx) => sum + Math.abs(tx.amount || 0), 0);
 
   const remaining = Math.max(0, budgetGoal - totalSpent);
@@ -137,7 +186,7 @@ const groupedTransactions = transactions.reduce((groups, tx) => {
         {/* Connects the delete button to the clearing logic */}
         <TransactionManager onDataCleared={handleClear} />
 
-        <button className="btn" onClick={() => navigate('/upload')}>
+        <button className="btn" onClick={() => navigate('/upload')} style={{ backgroundColor: '#acff4d', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
           Upload new data
         </button>
       </div>
@@ -182,36 +231,61 @@ const groupedTransactions = transactions.reduce((groups, tx) => {
         </summary>
 
         <div className="expanded-table-wrapper">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                {/* Clickable Header for Sorting */}
-      <th 
-        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-        style={{ cursor: 'pointer', userSelect: 'none' }}
-        className="sortable-header"
-      >
-        Description {catName === "Other" && (sortOrder === 'asc' ? '▲' : '▼')}
-      </th>
-                <th>Amount</th>
-                <th>State</th>
-              </tr>
-            </thead>
-            <tbody>
-              {categoryItems.map((tx) => (
-                <tr key={tx.id}>
-                  <td>{tx.startedDate ? new Date(tx.startedDate).toLocaleDateString() : 'N/A'}</td>
-                  <td>{tx.description}</td>
-                  <td style={{ color: tx.amount < 0 ? '#e74c3c' : '#27ae60' }}>
-                    {tx.amount.toFixed(2)}
-                  </td>
-                  <td>{tx.state}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+  <table className="data-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th 
+          onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+          style={{ cursor: 'pointer', userSelect: 'none' }}
+          className="sortable-header"
+        >
+          Description {catName === "Other" && (sortOrder === 'asc' ? '▲' : '▼')}
+        </th>
+        <th>Amount</th>
+        <th>State</th>
+        {/* Added this header so the table columns align correctly */}
+        <th>Actions</th> 
+      </tr>
+    </thead>
+    <tbody>
+      {categoryItems.map((tx) => (
+        <tr key={tx.id}>
+          <td>{tx.startedDate ? new Date(tx.startedDate).toLocaleDateString() : 'N/A'}</td>
+          <td>{tx.description}</td>
+          <td style={{ color: tx.amount < 0 ? '#e74c3c' : '#27ae60' }}>
+            {tx.amount.toFixed(2)}
+          </td>
+          <td>{tx.state}</td>
+          <td>
+            {catName === "Other" ? (
+              <button 
+                className="btn-small" 
+                onClick={() => createAndMove(tx.description)}
+              >
+                + New Category
+              </button>
+            ) : (
+              <select 
+                className="move-select"
+                onChange={(e) => handleMoveAll(tx.description, e.target.value)}
+                defaultValue=""
+              >
+                <option value="" disabled>Move</option>
+                {/* Ensure 'categories' is fetched in your Dashboard useEffect */}
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            )}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+        
       </details>
     );
   })}
