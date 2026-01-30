@@ -122,3 +122,19 @@ details[open] .arrow {
   margin-left: 5px;
   vertical-align: middle;
 }
+
+
+.move-select {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e0;
+  background-color: white;
+  font-size: 0.85rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.move-select:hover {
+  border-color: #a0aec0;
+  background-color: #f8fafc;
+}

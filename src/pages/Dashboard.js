@@ -296,27 +296,37 @@ const groupedTransactions = transactions.reduce((groups, tx) => {
           </td>
           <td>{tx.state}</td>
           <td>
-            {catName === "Other" ? (
-              <button 
-                className="btn-small" 
-                onClick={() => createAndMove(tx.description)}
-              >
-                + New Category
-              </button>
-            ) : (
-              <select 
-                className="move-select"
-                onChange={(e) => handleMoveAll(tx.description, e.target.value)}
-                defaultValue=""
-              >
-                <option value="" disabled>Move</option>
-                {/* Ensure 'categories' is fetched in your Dashboard useEffect */}
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-            )}
-          </td>
+  <select 
+    className="move-select"
+    defaultValue=""
+    onChange={(e) => {
+      const val = e.target.value;
+      if (val === "CREATE_NEW") {
+        createAndMove(tx.description);
+      } else if (val !== "") {
+        handleMoveAll(tx.description, val);
+      }
+      // Reset the dropdown so it doesn't stay on the selection
+      e.target.value = "";
+    }}
+  >
+    <option value="" disabled>Actions...</option>
+    
+    {/* The NEW option available to every single category */}
+    <option value="CREATE_NEW" style={{ fontWeight: 'bold', color: '#007bff' }}>
+      ✨ Create New Category
+    </option>
+    
+    <hr /> {/* Visual separator if your browser supports it in selects */}
+    
+    {/* Map your existing categories */}
+    {categories.map(cat => (
+      <option key={cat.id} value={cat.id}>
+        Move to {cat.name}
+      </option>
+    ))}
+  </select>
+</td>
         </tr>
       ))}
     </tbody>
