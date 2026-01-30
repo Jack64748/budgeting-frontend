@@ -1,346 +1,105 @@
-import React, { useState, useEffect } from 'react'; // Added useEffect
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TransactionManager from '../components/TransactionManager'; 
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import SavingsCard from '../components/SavingCard';
+import BudgetGauge from '../components/BudgetGauge';
+import CategoryAccordion from '../components/CategoryAccordion';
 import './App.css';
 
-const COLORS = ['#fea500', '#00C49F'];
-
-
-
-// Main function for the app the variable transactions, the function setTransactions
-// useState([]): Initializes the list as an empty array
 function Dashboard() {
   const [transactions, setTransactions] = useState([]); 
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
-
+  const [sortOrder, setSortOrder] = useState('asc');
   const navigate = useNavigate();
 
-  const [categories, setCategories] = useState([]);
-
-
-
-
-  // Defines an asynchronous function to get data without freezing the browser.
   const fetchTransactions = async () => {
     try {
-      // Sends GET request to .net backend url
-      const response = await fetch('http://localhost:5170/api/Budget');
-      //turns response into a JavaScript-readable list
-      const data = await response.json();
-      // Put the DB data into memory and redraws the table
-      setTransactions(data); 
-
-      const rescat = await fetch('http://localhost:5170/api/Categories');
-      const datacat = await rescat.json();
-      setCategories(datacat);
+      const [resTrans, resCat] = await Promise.all([
+        fetch('http://localhost:5170/api/Budget'),
+        fetch('http://localhost:5170/api/Categories')
+      ]);
+      setTransactions(await resTrans.json());
+      setCategories(await resCat.json());
     } catch (error) {
       console.error("Error:", error);
     } finally {
       setLoading(false);
     }
   };
-  // tells React to run this fetch exactly 
-  // once when the page first loads, preventing a never-ending loop of requests.
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
 
+  useEffect(() => { fetchTransactions(); }, []);
 
-
-// Locate the latest Savings balance from your transactions list
-const getSavingsBalance = () => {
-  const savingsData = transactions
-    .filter(tx => tx.product === "Savings")
-    // Sort to ensure the newest date is at index 0
-    .sort((a, b) => new Date(b.startedDate) - new Date(a.startedDate));
-
-  // Return the balance of the most recent transaction
-  return savingsData.length > 0 ? savingsData[0].balance : 0;
-};
-
-const currentSavings = getSavingsBalance();
-
-
-
-
-const handleMoveAll = async (description, newCatId) => {
-    // If the user selects the "Move all..." placeholder, do nothing
-    if (!newCatId) return;
-
-    try {
-      const response = await fetch('http://localhost:5170/api/Budget/reassign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            description: description, 
-            newCategoryId: parseInt(newCatId) 
-        })
-      });
-
-      if (response.ok) {
-        // This is the magic part: it re-fetches everything from the DB
-        // so all transactions with that name "jump" to their new home
-        fetchTransactions(); 
-      }
-    } catch (err) {
-      console.error("Failed to reassign:", err);
-    }
+  const handleMoveAll = async (description, newCatId) => {
+    const response = await fetch('http://localhost:5170/api/Budget/reassign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description, newCategoryId: parseInt(newCatId) })
+    });
+    if (response.ok) fetchTransactions();
   };
-
 
   const createAndMove = async (description) => {
     const newName = prompt("Enter new category name:");
     if (!newName) return;
-
-    // 1. Create Category
     const catRes = await fetch('http://localhost:5170/api/Categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName })
     });
     const newCategory = await catRes.json();
-
-    // 2. Reassign all transactions with this name to the new ID
     await handleMoveAll(description, newCategory.id);
-};
-
-
-  
-  // This is a "callback" function. When the delete button in the 
-  // child component is clicked, this function wipes the local screen 
-  // data so the table disappears immediately.
-  const handleClear = () => {
-    setTransactions([]); // Clears UI state
   };
 
-
-
-  // This creates an object where the keys are Category Names 
-// and the values are arrays of transactions
-const groupedTransactions = transactions.reduce((groups, tx) => {
-  const categoryName = tx.category?.name || 'Other';
-  if (!groups[categoryName]) {
-    groups[categoryName] = [];
-  }
-  groups[categoryName].push(tx);
-  return groups;
-}, {});
-
-
-
-  // --- CALCULATION LOGIC FOR THE GAUGE ---
-  const budgetGoal = 2000; // You can change this to your monthly limit
-  
-  // Calculate total spent specifically for "Fun Money" (or all spending)
-  // Math.abs turns negative numbers into positive for the chart
-  const totalSpent = transactions
-    .filter(tx => tx.category?.name === "Fitness") 
-    .reduce((sum, tx) => sum + Math.abs(tx.amount || 0), 0);
-
-  const remaining = Math.max(0, budgetGoal - totalSpent);
-
-  const chartData = [
-    { name: 'Spent', value: totalSpent },
-    { name: 'Remaining', value: remaining },
-  ];
-
+  const groupedTransactions = transactions.reduce((groups, tx) => {
+    const categoryName = tx.category?.name || 'Other';
+    if (!groups[categoryName]) groups[categoryName] = [];
+    groups[categoryName].push(tx);
+    return groups;
+  }, {});
 
   if (loading) return <div>Loading...</div>;
 
-  // IF NO DATA: Show the "Get Started" screen
   if (transactions.length === 0) {
     return (
       <div className="empty-state">
         <h2>No Transactions Found</h2>
-        <p>It looks like you haven't uploaded any bank statements yet.</p>
-        <button className="btn" onClick={() => navigate('/upload')}>
-          Go to Upload Page
-        </button>
+        <button className="btn" onClick={() => navigate('/upload')}>Go to Upload Page</button>
       </div>
     );
   }
 
-  // What the user actually sees
   return (
-    <div>
+    <div className="dashboard-container">
       <h1>Budget Dashboard</h1>
-      <div className="savings-card" style={{ 
-  background: '#f0f9ff', 
-  padding: '10px', 
-  borderRadius: '10px', 
-  border: '4px solid #bae6fd',
-  marginBottom: '20px' 
-}}>
-  <h3 style={{ margin: 0, color: '#0369a1' }}>🏦 Total Savings Balance</h3>
-  <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: '10px 0' }}>
-    £{currentSavings.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-  </p>
-  <small style={{ color: '#0c4a6e' }}>
-    Latest sync: {transactions.find(tx => tx.product === "Savings")?.startedDate 
-      ? new Date(transactions.find(tx => tx.product === "Savings").startedDate).toLocaleDateString() 
-      : 'No data'}
-  </small>
-</div>
-
-
-
-
-      {/* SECTION 1: THE GAUGE CHART */}
-      <div className="gauge-section" style={{ textAlign: 'center', marginBottom: '30px' }}>
-        <h3>Fun Money Progress</h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="100%"
-              startAngle={180}
-              endAngle={0}
-              innerRadius={70}
-              outerRadius={90}
-              paddingAngle={2}
-              dataKey="value"
-            >
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-        <div style={{ marginTop: '-40px' }}>
-          <span style={{ fontSize: '24px', fontWeight: 'bold' }}>£{totalSpent.toFixed(2)}</span>
-          <p style={{ color: 'gray' }}>Spent of £{budgetGoal} limit</p>
-        </div>
-      </div>
+      
+      <SavingsCard transactions={transactions} />
+      
+      <BudgetGauge transactions={transactions} budgetGoal={2000} />
 
       <h3>Manage existing data</h3>
-
-      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
-        
-        
-        {/* Connects the delete button to the clearing logic */}
-        <TransactionManager onDataCleared={handleClear} />
-
-        <button className="btn" onClick={() => navigate('/upload')} style={{ backgroundColor: '#2aa03d', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <TransactionManager onDataCleared={() => setTransactions([])} />
+        <button className="btn" onClick={() => navigate('/upload')} style={{ backgroundColor: '#2aa03d', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px' }}>
           Upload new data
         </button>
       </div>
 
-
-      {/* Replace your existing table with this mapped grouped data */}
-<div className="grouped-transactions-container">
-  <h2>Spending by Category</h2>
-  
-  {Object.keys(groupedTransactions).map((catName) => {
-    let categoryItems = groupedTransactions[catName];
-
-    // Check if this is the "Other" category and sort it
-    if (catName === "Other") {
-        categoryItems = [...categoryItems].sort((a, b) => {
-            const descA = a.description?.toUpperCase() || "";
-            const descB = b.description?.toUpperCase() || "";
-            
-            if (sortOrder === 'asc') {
-                return descA.localeCompare(descB);
-            } else {
-                return descB.localeCompare(descA);
-            }
-        });
-    }
-
-    const total = categoryItems.reduce((sum, item) => sum + item.amount, 0);
-
-    return (
-      <details key={catName} className="category-accordion">
-        <summary className="category-summary">
-          <div className="summary-content">
-            <span className="cat-name">
-               {/* Small arrow emoji that rotates automatically with <details> */}
-               <span className="arrow">▶</span> {catName}
-            </span>
-            <span className="cat-count">({categoryItems.length} items)</span>
-            <span className={`cat-total ${total < 0 ? 'negative' : 'positive'}`}>
-              £{Math.abs(total).toFixed(2)}
-            </span>
-          </div>
-        </summary>
-
-        <div className="expanded-table-wrapper">
-  <table className="data-table">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th 
-          onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-          style={{ cursor: 'pointer', userSelect: 'none' }}
-          className="sortable-header"
-        >
-          Description {catName === "Other" && (sortOrder === 'asc' ? '▲' : '▼')}
-        </th>
-        <th>Amount</th>
-        <th>State</th>
-        {/* Added this header so the table columns align correctly */}
-        <th>Actions</th> 
-      </tr>
-    </thead>
-    <tbody>
-      {categoryItems.map((tx) => (
-        <tr key={tx.id}>
-          <td>{tx.startedDate ? new Date(tx.startedDate).toLocaleDateString() : 'N/A'}</td>
-          <td>{tx.description}</td>
-          <td style={{ color: tx.amount < 0 ? '#e74c3c' : '#27ae60' }}>
-            {tx.amount.toFixed(2)}
-          </td>
-          <td>{tx.state}</td>
-          <td>
-  <select 
-    className="move-select"
-    defaultValue=""
-    onChange={(e) => {
-      const val = e.target.value;
-      if (val === "CREATE_NEW") {
-        createAndMove(tx.description);
-      } else if (val !== "") {
-        handleMoveAll(tx.description, val);
-      }
-      // Reset the dropdown so it doesn't stay on the selection
-      e.target.value = "";
-    }}
-  >
-    <option value="" disabled>Actions...</option>
-    
-    {/* The NEW option available to every single category */}
-    <option value="CREATE_NEW" style={{ fontWeight: 'bold', color: '#007bff' }}>
-      ✨ Create New Category
-    </option>
-    
-    <hr /> {/* Visual separator if your browser supports it in selects */}
-    
-    {/* Map your existing categories */}
-    {categories.map(cat => (
-      <option key={cat.id} value={cat.id}>
-        Move to {cat.name}
-      </option>
-    ))}
-  </select>
-</td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
-
-        
-      </details>
-    );
-  })}
-</div>
-     
-        
-      
+      <div className="grouped-transactions-container">
+        <h2>Spending by Category</h2>
+        {Object.keys(groupedTransactions).map((catName) => (
+          <CategoryAccordion 
+            key={catName}
+            catName={catName}
+            items={groupedTransactions[catName]}
+            sortOrder={sortOrder}
+            setSortOrder={setSortOrder}
+            categories={categories}
+            handleMoveAll={handleMoveAll}
+            createAndMove={createAndMove}
+          />
+        ))}
+      </div>
     </div>
   );
 }
