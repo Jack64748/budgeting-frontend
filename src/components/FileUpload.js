@@ -22,17 +22,25 @@ function FileUpload({ onData, onUploadSuccess }) {
         body: formData,
       });
 
-      if (response.ok) {
-        // 2. Add a console log here to see if this code is even reached
-        console.log("Server responded 200 OK. Triggering redirect...");
+      // 1. Handle non-200 responses (like 400 or 500)
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Upload failed. Please check your file format.");
+      }
 
-        // 3. This MUST match the prop name you used in UploadPage
-        if (onUploadSuccess) {
-          onUploadSuccess(); 
-        }
-      } 
+      // 2. Handle Success
+      console.log("Server responded 200 OK. Triggering redirect...");
+      if (onUploadSuccess) {
+        onUploadSuccess(); 
+      }
+      
     } catch (err) {
+      // 3. Capture the error so it displays in your UI
       console.error("Upload Error:", err);
+      setError(err.message);
+    } finally {
+      // 4. CRITICAL: This stops the "Processing..." freeze
+      setLoading(false);
     }
   };
 
