@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TransactionManager from '../components/TransactionManager'; 
-import SavingsCard from '../components/SavingCard';
-import BudgetGauge from '../components/BudgetGauge';
-import CategoryAccordion from '../components/CategoryAccordion';
+import SavingsCard from '../components/Dashboard/SavingCard';
+import BudgetGauge from '../components/Dashboard/BudgetGauge';
+import CategoryAccordion from '../components/Dashboard/CategoryAccordion';
 import './App.css';
 
 function Dashboard() {
