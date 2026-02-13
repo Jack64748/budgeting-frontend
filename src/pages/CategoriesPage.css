@@ -200,3 +200,10 @@ tr:hover .actions-cell {
   border-color: #2ecc71;
   outline: none;
 }
+
+.modal-content input[type="text"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}

@@ -10,7 +10,7 @@ function App() {
     <Router>
       <div style={{ display: 'flex' }}>
         <Sidebar />
-        <main style={{ flexGrow: 1, height: '100vh', overflowY: 'auto', padding: '20px' }}>
+        <main style={{ flexGrow: 1, height: '100vh', overflowY: 'auto', padding: '5px' }}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/upload" element={<UploadPage />} />
